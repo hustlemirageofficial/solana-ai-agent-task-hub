@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { Brand } from "~/components/Brand";
 import type { ReactNode } from "react";
 
 export const Route = createFileRoute("/")({
@@ -12,14 +13,7 @@ function Home() {
       {/* ---------- Nav ---------- */}
       <header className="sticky top-0 z-40 border-b border-white/5 bg-[#05060d]/80 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <a href="/" className="flex items-center gap-2.5">
-            <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-violet-500 to-teal-400 text-sm font-black text-black shadow-lg shadow-teal-400/20">
-              A
-            </span>
-            <span className="text-lg font-bold tracking-tight text-white">
-              AgentPay
-            </span>
-          </a>
+          <Brand to="/" size="md" ariaLabel="AgentPay home" />
           <nav className="hidden items-center gap-6 text-sm text-slate-400 sm:flex">
             <a href="#features" className="transition hover:text-white">
               Features
@@ -198,12 +192,7 @@ function Home() {
       {/* ---------- Footer ---------- */}
       <footer className="border-t border-white/5 py-10">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 text-sm text-slate-500 sm:flex-row sm:px-6">
-          <div className="flex items-center gap-2.5">
-            <span className="grid h-6 w-6 place-items-center rounded-lg bg-gradient-to-br from-violet-500 to-teal-400 text-[10px] font-black text-black">
-              A
-            </span>
-            <span className="font-semibold text-slate-300">AgentPay</span>
-          </div>
+          <Brand to="/" size="sm" ariaLabel="AgentPay home" />
           <p>Solana devnet · deposits, releases & refunds recorded on-chain</p>
           <Link to="/app" className="transition hover:text-white">
             Launch app
