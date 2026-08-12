@@ -2,6 +2,13 @@ import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { useEffect, useState } from "react";
 import { networkLabel } from "~/lib/solana";
 import { useWalletBridge } from "./wallet-context";
+import {
+  BURNER_WALLET_NAME,
+  isMobileWeb,
+  phantomBrowseLink,
+  walletInitial,
+  walletLabel,
+} from "./wallet-utils";
 
 /**
  * Header wallet control. Reads the app-level wallet bridge (WalletProvider),
@@ -17,6 +24,7 @@ export function WalletConnect() {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
+  const [phantomHelp, setPhantomHelp] = useState(false);
 
   const { mounted, connected, publicKey, connection, connect, disconnect } = bridge;
 
@@ -39,13 +47,27 @@ export function WalletConnect() {
     };
   }, [connected, publicKey, connection]);
 
-  async function handleConnect(name: string) {
+  async function handleConnect(w: { name: string; readyState: string }) {
     setConnectError(null);
+    setPhantomHelp(false);
+    // iPhone/iPad/Android Safari/Chrome have no wallet browser extensions.
+    // Phantom's documented mobile flow is to open the site inside the Phantom
+    // app, where `window.phantom.solana` is injected and wallet-adapter connect
+    // works. Rather than failing a doomed connect(), surface that path.
+    if (w.name === "Phantom" && w.readyState === "NotDetected" && isMobileWeb()) {
+      setPhantomHelp(true);
+      return;
+    }
     setOpen(false);
     try {
-      await connect(name);
+      await connect(w.name);
     } catch (err) {
-      setConnectError(err instanceof Error ? err.message : "Wallet connection failed");
+      const msg = err instanceof Error ? err.message : "Wallet connection failed";
+      setConnectError(
+        w.name === "Phantom" && /not detected/i.test(msg)
+          ? `${msg} — install the Phantom browser extension at phantom.app`
+          : msg,
+      );
     }
   }
 
@@ -87,24 +109,54 @@ export function WalletConnect() {
             <p className="px-3 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wider text-slate-500">
               {networkLabel()} · {bridge.network}
             </p>
-            {bridge.wallets.map((w) => (
+            {bridge.wallets.map((w, index) => (
               <button
-                key={w.name}
+                key={w.name ?? `wallet-${index}`}
                 type="button"
-                onClick={() => void handleConnect(w.name)}
+                onClick={() => void handleConnect(w)}
                 className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-200 transition hover:bg-white/5"
               >
                 <span className="grid h-6 w-6 place-items-center rounded-full bg-gradient-to-br from-violet-500/40 to-teal-400/40 text-[10px] font-bold">
-                  {initial(w.name)}
+                  {walletInitial(w.name)}
                 </span>
-                <span className="flex-1">{label(w.name)}</span>
-                {w.name !== "Unsafe Burner Wallet" && (
+                <span className="flex-1">{walletLabel(w.name)}</span>
+                {w.name !== BURNER_WALLET_NAME && (
                   <span className="text-[10px] text-slate-500">
                     {w.readyState === "Installed" ? "installed" : "not detected"}
                   </span>
                 )}
               </button>
             ))}
+            {phantomHelp && (
+              <div className="mt-1 rounded-xl border border-violet-400/20 bg-violet-500/10 px-3 py-2.5 text-xs text-slate-300">
+                <p className="font-medium text-slate-100">
+                  Phantom isn't available in this browser.
+                </p>
+                <p className="mt-1">
+                  There is no Phantom extension on iPhone/iPad — open AgentPay
+                  inside the Phantom app instead, where the wallet is injected
+                  and connecting works.
+                </p>
+                <div className="mt-2 flex flex-col gap-1.5">
+                  <a
+                    href={phantomBrowseLink() ?? "https://phantom.app"}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-lg bg-violet-500/20 px-2.5 py-1.5 font-medium text-violet-200 transition hover:bg-violet-500/30"
+                  >
+                    Open in Phantom app →
+                  </a>
+                  <a
+                    href="https://phantom.app"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-lg px-2.5 py-1 text-slate-400 transition hover:text-slate-200"
+                  >
+                    Get Phantom at phantom.app
+                  </a>
+                </div>
+              </div>
+            )}
             {connectError && (
               <p className="border-t border-white/5 px-3 py-2 text-xs text-amber-400">
                 {connectError}
@@ -163,15 +215,4 @@ export function WalletConnect() {
       {copied && <span className="text-xs text-emerald-400">Copied!</span>}
     </div>
   );
-}
-
-function label(name: string): string {
-  if (name === "Unsafe Burner Wallet") return "Devnet burner wallet";
-  if (name === "Solflare") return "Solflare";
-  return name;
-}
-
-function initial(name: string): string {
-  if (name === "Unsafe Burner Wallet") return "B";
-  return name.charAt(0).toUpperCase();
 }
