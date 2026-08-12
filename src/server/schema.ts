@@ -63,7 +63,9 @@ export function ensureSchema(): Promise<void> {
     ensurePromise = (async () => {
       const db = sql();
       for (const stmt of STATEMENTS) {
-        await db(stmt);
+        // Neon's driver rejects plain-string calls — use .query() for
+        // function-style statements (tagged templates don't fit this loop).
+        await db.query(stmt);
       }
     })().catch((err: unknown) => {
       ensurePromise = null; // allow a retry on the next call

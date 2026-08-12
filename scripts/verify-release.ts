@@ -206,6 +206,11 @@ function makeSql(store: MemStore) {
     if (typeof strings === "string") return Promise.resolve([]); // DDL strings
     return Promise.resolve(store.query(strings.join("?"), params));
   };
+  // Mirror the real Neon driver: function-style calls use .query() (schema.ts).
+  q.query = (sqlText: string, params: unknown[] = []): Promise<Row[]> =>
+    /^\s*(create|alter|drop|truncate)\b/i.test(sqlText)
+      ? Promise.resolve([]) // DDL no-op, same as the plain-string path above
+      : Promise.resolve(store.query(sqlText, params));
   // db.transaction([q1, q2]) — same shape funding.ts / release.ts use.
   q.transaction = (queries: Promise<Row[]>[]): Promise<Row[][]> => Promise.all(queries);
   return q;

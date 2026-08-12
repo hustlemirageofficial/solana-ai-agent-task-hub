@@ -126,10 +126,16 @@ class MemStore {
 }
 
 function makeSql(store: MemStore) {
-  return (strings: TemplateStringsArray | string, ...params: unknown[]): Promise<Row[]> => {
+  const q = (strings: TemplateStringsArray | string, ...params: unknown[]): Promise<Row[]> => {
     if (typeof strings === "string") return Promise.resolve([]); // DDL strings
     return Promise.resolve(store.query(strings.join("?"), params));
   };
+  // Mirror the real Neon driver: function-style calls use .query() (schema.ts).
+  q.query = (sqlText: string, params: unknown[] = []): Promise<Row[]> =>
+    /^\s*(create|alter|drop|truncate)\b/i.test(sqlText)
+      ? Promise.resolve([]) // DDL no-op, same as the plain-string path above
+      : Promise.resolve(store.query(sqlText, params));
+  return q;
 }
 
 // Must be registered BEFORE the first dynamic import of anything that pulls in
