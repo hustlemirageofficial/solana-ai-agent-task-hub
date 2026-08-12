@@ -116,6 +116,20 @@ export async function handleApiRequest(req: Request): Promise<Response | null> {
             return json(await recordDeposit(id, body));
           }
         }
+        // POST /api/tasks/:id/deposit — the browser "Fund & launch" flow. Same
+        // contract as POST /api/tasks/:id (below): read the JSON body, then
+        // verify + record. All guards live in recordDeposit (404 unknown task,
+        // 409 wrong state / already recorded elsewhere, 422 amount mismatch or
+        // unverifiable on-chain, 503 no DB); repeats are idempotent and return
+        // { already: true } — the unique uq_txns_signature index stays the
+        // backstop, never weakened.
+        const deposit = pathname.match(/^\/api\/tasks\/([^/]+)\/deposit$/);
+        if (deposit) {
+          if (method !== "POST") break;
+          const id = decodeURIComponent(deposit[1]);
+          const body = await readJson(req);
+          return json(await recordDeposit(id, body));
+        }
         const run = pathname.match(/^\/api\/tasks\/([^/]+)\/run$/);
         if (run) {
           if (method !== "POST") break;
