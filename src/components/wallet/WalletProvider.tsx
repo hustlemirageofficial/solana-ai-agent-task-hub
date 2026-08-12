@@ -18,6 +18,7 @@ import {
   WalletBridgeProvider,
   type WalletBridgeState,
 } from "./wallet-context";
+import { normalizeBridgeWallets } from "./wallet-utils";
 
 /**
  * App-level wallet provider (SSR-safe).
@@ -74,15 +75,19 @@ function WalletBridgeInner({ children }: { children: React.ReactNode }) {
   } = useWallet();
 
   const value: WalletBridgeState = useMemo(() => {
-    const shown = wallets
-      .filter((w) => w.name !== "Unsafe Burner Wallet" || IS_DEVNET)
-      .map((w) => ({ name: w.name, readyState: w.readyState }));
+    // See normalizeBridgeWallets for why we read `adapter.name`, not `w.name`
+    // (wallet-adapter-react Wallet entries are `{ adapter, readyState }` —
+    // `w.name` is always undefined and used to crash the dropdown on
+    // `name.charAt(0)` in WalletConnect's initial()).
+    const shown = normalizeBridgeWallets(wallets, IS_DEVNET);
     return {
       mounted: true,
       connecting,
       connected,
       publicKey: publicKey?.toBase58() ?? null,
-      walletName: wallet?.name ?? null,
+      // `wallet` is the selected Wallet entry ({ adapter, readyState }) — its
+      // display name is `adapter.name` (see normalizeBridgeWallets).
+      walletName: wallet?.adapter?.name ?? null,
       network: SOLANA_NETWORK,
       connection,
       sendTransaction: sendTransaction
@@ -90,6 +95,11 @@ function WalletBridgeInner({ children }: { children: React.ReactNode }) {
         : null,
       connect: async (name: string) => {
         select(name);
+        // select() only updates React state — the WalletProvider's `connect`
+        // closure still sees the previous (null) adapter, which would throw
+        // WalletNotSelectedError. Give the selection a tick to render before
+        // connecting (wallet-adapter's own autoConnect effect re-uses this).
+        await new Promise((r) => setTimeout(r, 0));
         await connect();
       },
       disconnect: async () => {
