@@ -53,8 +53,10 @@ export function WalletConnect() {
     // iPhone/iPad/Android Safari/Chrome have no wallet browser extensions.
     // Phantom's documented mobile flow is to open the site inside the Phantom
     // app, where `window.phantom.solana` is injected and wallet-adapter connect
-    // works. Rather than failing a doomed connect(), surface that path.
-    if (w.name === "Phantom" && w.readyState === "NotDetected" && isMobileWeb()) {
+    // works. On mobile the Phantom adapter reports Loadable (deep-link capable)
+    // or NotDetected — neither can connect from plain Safari, so surface that
+    // path instead of a doomed connect() (which would also auto-redirect).
+    if (w.name === "Phantom" && w.readyState !== "Installed" && isMobileWeb()) {
       setPhantomHelp(true);
       return;
     }

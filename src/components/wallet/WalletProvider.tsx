@@ -95,6 +95,11 @@ function WalletBridgeInner({ children }: { children: React.ReactNode }) {
         : null,
       connect: async (name: string) => {
         select(name);
+        // select() only updates React state — the WalletProvider's `connect`
+        // closure still sees the previous (null) adapter, which would throw
+        // WalletNotSelectedError. Give the selection a tick to render before
+        // connecting (wallet-adapter's own autoConnect effect re-uses this).
+        await new Promise((r) => setTimeout(r, 0));
         await connect();
       },
       disconnect: async () => {

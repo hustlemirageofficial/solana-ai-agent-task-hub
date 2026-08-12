@@ -75,13 +75,16 @@ export function isMobileWeb(): boolean {
 /**
  * Phantom in-app browser deep link — opens the CURRENT page inside the Phantom
  * mobile app, where `window.phantom.solana` is injected and wallet-adapter
- * connect works. Format `https://phantom.app/ul/browse/<url>` (route confirmed
- * live over HTTPS; Phantom documents the `phantom.app/ul/...` universal-link
- * family). If the Phantom app isn't installed the link falls back to
- * phantom.app's download page, so it degrades gracefully.
+ * connect works. Format matches the PhantomWalletAdapter's own mobile connect
+ * path (verified in @solana/wallet-adapter-phantom v0.9.29 source:
+ * `https://phantom.app/ul/browse/${encodeURIComponent(location.href)}?ref=...`);
+ * Phantom documents the `phantom.app/ul/...` universal-link family. If the
+ * Phantom app isn't installed the link falls back to phantom.app's download
+ * page, so it degrades gracefully.
  */
 export function phantomBrowseLink(): string | null {
   if (typeof window === "undefined") return null;
-  const currentUrl = `${window.location.origin}${window.location.pathname}`;
-  return `https://phantom.app/ul/browse/${currentUrl}`;
+  const url = encodeURIComponent(window.location.href);
+  const ref = encodeURIComponent(window.location.origin);
+  return `https://phantom.app/ul/browse/${url}?ref=${ref}`;
 }
