@@ -92,6 +92,16 @@ class MemStore {
       return rows.length ? [{ ...rows[0] }] : [];
     }
 
+    // Deposit idempotency pre-check (funding.ts): select * from txns where
+    // signature = ? and kind = 'deposit' limit 1
+    m = sqlText.match(/^select \* from txns where signature = \? and kind = 'deposit' limit 1$/i);
+    if (m) {
+      return [...this.txns.values()]
+        .filter((r) => String(r.signature) === String(params[0]) && String(r.kind) === "deposit")
+        .slice(0, 1)
+        .map((r) => ({ ...r }));
+    }
+
     // listTxns (task-scoped / global) — used by the History page loader & API.
     m = sqlText.match(/^select \* from txns where task_id = \? order by created_at desc limit \?$/i);
     if (m) {
@@ -262,6 +272,25 @@ function fundedState(extra: Partial<RpcState> = {}): RpcState {
   };
 }
 
+function draftTask(id: string, extra: Partial<Row> = {}): Row {
+  return {
+    id,
+    title: "Write a haiku about Solana",
+    description: "Three lines, five-seven-five syllables, mention devnet.",
+    agent: "general-assistant",
+    currency: "SOL",
+    amount_lamports: "1000000000", // 1 SOL
+    status: "draft",
+    funder: null,
+    escrow: ESCROW,
+    deposit_sig: null,
+    result: null,
+    created_at: new Date(),
+    updated_at: new Date(),
+    ...extra,
+  };
+}
+
 function asApiError(err: unknown): { status: number; message: string } {
   const e = err as { status?: number; message?: string };
   return { status: e.status ?? 0, message: e.message ?? String(err) };
@@ -270,6 +299,22 @@ function asApiError(err: unknown): { status: number; message: string } {
 async function api(method: string, path: string): Promise<{ status: number; body: any }> {
   const { handleApiRequest } = await import("../src/server/api");
   const resp = await handleApiRequest(new Request(`http://localhost${path}`, { method }));
+  return { status: resp.status, body: (await resp.json()) as any };
+}
+
+async function apiBody(
+  method: string,
+  path: string,
+  body: string
+): Promise<{ status: number; body: any }> {
+  const { handleApiRequest } = await import("../src/server/api");
+  const resp = await handleApiRequest(
+    new Request(`http://localhost${path}`, {
+      method,
+      headers: { "content-type": "application/json" },
+      body,
+    })
+  );
   return { status: resp.status, body: (await resp.json()) as any };
 }
 
@@ -369,6 +414,49 @@ test("double-action & wrong-state guards (409); unknown task 404", async () => {
 
   const notFound = await api("POST", "/api/tasks/does-not-exist/approve");
   expect(notFound.status).toBe(404);
+});
+
+test("POST /api/tasks/:id/deposit routes to recordDeposit (contract fix): guarded errors, never 404, nothing recorded", async () => {
+  setRpcState(fundedState());
+
+  // (a) Empty body → the route is matched (a 404 would mean it still misses
+  //     the switch) and readJson rejects with 400 invalid JSON.
+  const empty = await apiBody("POST", "/api/tasks/dep-route/deposit", "");
+  expect(empty.status).toBe(400);
+  expect(String(empty.body.error)).toContain("invalid JSON body");
+
+  // (b) `{}` → reaches recordDeposit's own first guard (signature required).
+  const noSig = await apiBody("POST", "/api/tasks/dep-route/deposit", "{}");
+  expect(noSig.status).toBe(400);
+  expect(String(noSig.body.error)).toContain("signature is required");
+
+  // (c) Valid-format signature + matching bounty on a draft task → passes the
+  //     local guards, then on-chain verification fails against the mock RPC
+  //     (no parsed tx) → 422, task untouched, no txn row. Proves the full
+  //     recordDeposit path is reachable via /deposit.
+  store.seed(draftTask("dep-route"));
+  const sig = "1".repeat(64); // valid 64-byte base58 (zero bytes)
+  const verify = await apiBody(
+    "POST",
+    "/api/tasks/dep-route/deposit",
+    JSON.stringify({ signature: sig, amount: "1000000000" })
+  );
+  expect(verify.status).toBe(422);
+  expect(String(verify.body.error)).toContain("not found on-chain");
+  expect(String(store.get("dep-route")!.status)).toBe("draft"); // untouched
+  expect(txnCount("dep-route")).toBe(0);
+
+  // (d) The legacy POST /api/tasks/:id route keeps working with identical
+  //     semantics (guarded error, nothing recorded).
+  const legacy = await apiBody(
+    "POST",
+    "/api/tasks/dep-route",
+    JSON.stringify({ signature: sig, amount: "1000000000" })
+  );
+  expect(legacy.status).toBe(422);
+  expect(String(legacy.body.error)).toContain("not found on-chain");
+  expect(String(store.get("dep-route")!.status)).toBe("draft");
+  expect(txnCount("dep-route")).toBe(0);
 });
 
 test("escrow-insufficient-balance → 422, status untouched (no flip, no error recorded)", async () => {

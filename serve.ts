@@ -51,6 +51,13 @@ for (let attempt = 1; ; attempt++) {
     Bun.serve({
       port: PORT,
       hostname: HOST,
+      // Bun's default idleTimeout is 10s, but approve/reject run on-chain
+      // confirm loops (10–150s) after signing. Without a longer timeout the
+      // client's fetch dies with "socket connection closed unexpectedly" even
+      // though the handler completes in the background (DB ends consistent).
+      // 120s covers the slowest confirm loop with margin; deposit/run never
+      // come close to it.
+      idleTimeout: 120_000,
       async fetch(req) {
         const { pathname } = new URL(req.url);
         // JSON API first — this TanStack Start version no longer ships the

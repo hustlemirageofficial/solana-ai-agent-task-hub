@@ -96,6 +96,16 @@ function handleRpc(body: unknown): Response {
         ],
       });
     }
+    case "getTransaction": {
+      // Deposit verification (verify.ts → Connection.getParsedTransaction sends
+      // RPC method "getTransaction"): the real RPC returns result:null for a
+      // signature with no on-chain tx, so superstruct (GetParsedTransactionRpcResult)
+      // expects `result` to be the parsed tx object — with slot at the top
+      // level — or null. NOT a {context, value} wrapper (that shape fails
+      // superstruct with "At path: slot"). → verifyDeposit throws not_found,
+      // surfaced as 422.
+      return ok(null);
+    }
     case "getAccountInfo": {
       const addr = String((req.params as unknown[])[0]);
       return ok(
