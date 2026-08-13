@@ -1,4 +1,5 @@
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
+import { Brand } from "~/components/Brand";
 import { WalletConnect } from "~/components/wallet/WalletConnect";
 import { WalletProvider } from "~/components/wallet/WalletProvider";
 
@@ -20,17 +21,7 @@ function AppLayout() {
       <div className="min-h-dvh bg-[#05060d] text-slate-200">
       <header className="sticky top-0 z-40 border-b border-white/5 bg-[#05060d]/80 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
-          <Link
-            to="/"
-            className="flex shrink-0 items-center gap-2.5"
-          >
-            <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-violet-500 to-teal-400 text-sm font-black text-black">
-              A
-            </span>
-            <span className="text-lg font-bold tracking-tight text-white">
-              AgentPay
-            </span>
-          </Link>
+          <Brand to="/" size="md" ariaLabel="AgentPay home" />
 
           <nav className="flex items-center gap-1">
             <Link to="/app" activeProps={{ className: navLinkActive }} className={navLink}>
