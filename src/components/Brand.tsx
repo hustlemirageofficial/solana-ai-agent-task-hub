@@ -110,13 +110,19 @@ export function LogoMark({
         stroke="rgba(255,255,255,0.28)"
         strokeWidth="1.25"
       />
-      {/* Approval check */}
+      {/* Monogram "A" — bold black, echoing the previous AgentPay badge */}
       <path
-        d="M8.75 16.9 L13.9 22.05 L23.75 10.35"
-        stroke="#FFFFFF"
-        strokeWidth="3.4"
+        d="M10 22.5 L16 9.5 L22 22.5"
+        stroke="#000000"
+        strokeWidth="4.5"
         strokeLinecap="round"
         strokeLinejoin="round"
+      />
+      <path
+        d="M11.5 18 L20.5 18"
+        stroke="#000000"
+        strokeWidth="4.5"
+        strokeLinecap="round"
       />
       {/* Payment dot */}
       <circle cx="26.6" cy="5.8" r="2" fill="#FFFFFF" />
