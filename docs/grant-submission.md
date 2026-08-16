@@ -3,21 +3,29 @@
 > **Submission status:** draft materials for the **Superteam Agentic Engineering
 > Grant** (aka the AI Agentic Engineering / agent builder grant track).
 >
-> **Research caveat (read first):** at the time of writing, the current
-> grant-cycle requirements (exact deadline, eligibility, submission format)
-> **could not be independently confirmed from this environment** — web search
-> engines and the grant page's CAPTCHA gates blocked programmatic access, so no
-> authoritative source URL for the *current* cycle could be captured. Verify
-> against the official pages before submitting:
-> - Superteam program hub / grant directory: <https://earn.superteam.fun> (the
->   Superteam Earn listings, "Grants" section)
-> - Superteam blog / announcements: <https://superteam.fun/blog> (grant round
->   announcements)
-> - Superteam X account: <https://x.com/superteam>
+> **Verified cycle summary (read first):** the grant-cycle details below were
+> verified live on 2026-08-15 from the official listing
+> (<https://superteam.fun/earn/grants/agentic-engineering>; `earn.superteam.fun`
+> redirects there) — full captured facts in
+> `/home/team/shared/grant-evidence/grant-cycle-verified.md`.
+> - **Status:** OPEN / rolling — no deadline on the listing; applications
+>   reviewed on a weekly cycle (avg. response ~1 week).
+> - **Cheque:** **200 USDG** — 50% ($100) upfront post-KYC, 50% ($100) after
+>   shipping. KYC and payouts are handled on Earn (payments processed Mondays,
+>   paid by Friday of the same week).
+> - **Apply:** on **Superteam Earn** with a short description of what you want
+>   to build and how you'll use AI tools (Earn account login required first).
+>   The prepared application text is in `docs/agentic-grant-application.md`.
+> - **Tranche 2 (after shipping):** share the project's **live URL**, **GitHub
+>   repo**, and **AI-coding subscription receipt(s) totalling $200** via the
+>   tranche application form on the listing (appears after the first tranche is
+>   received).
+> - **Eligibility:** global; the project must have some Solana integration;
+>   open-source repos encouraged (private allowed with reviewer access).
+> - **Contact:** support@superteam.fun (code review contact: abhwshek@gmail.com).
 >
-> Everything below is written to slot into a typical Superteam application
-> (pitch, problem/solution, architecture, demo, security, roadmap). Adjust the
-> format to whatever the live application form asks for.
+> Everything below is written to slot into the Earn application form (pitch,
+> problem/solution, architecture, demo, security, roadmap).
 
 ---
 
@@ -43,6 +51,10 @@ The full MVP is **built, tested and live on devnet**:
 - **No-double-pay guarantees** — atomic status flips + unique signature
   constraints + rollback-on-failure make double release/refund structurally
   impossible.
+- **Proven end-to-end on devnet** — a live E2E run (2026-08-12) completed both
+  flows with finalized on-chain signatures: approve → release to the agent and
+  reject → refund to the funder (signatures and explorer links in §4 and the
+  evidence checklist).
 
 ## 2. Problem & solution
 
@@ -157,12 +169,14 @@ explorer, so a funder can independently verify that the money really moved.
 - **Graceful degradation** — no `DATABASE_URL`? The server boots, the UI shows
   clear empty states and 503 messages; the product is understandable without a
   DB. No LLM key? Demo mode, clearly labeled.
-- **Testing** — 16/16 offline tests green (`bun test
-  ./scripts/verify-agent.ts` + `./scripts/verify-release.ts`) exercising the
-  production state machines, payout orchestration, idempotency, and a gated
-  concurrency test proving exactly one payout under race. An additional
-  real-devnet funding suite (`scripts/verify-funding.ts`) is written and ready;
-  it is currently blocked only by the devnet faucet rate limit (see Demo).
+- **Testing** — 23/23 offline tests green, run separately: `bun test
+  ./scripts/verify-agent.ts` (7 tests) + `./scripts/verify-release.ts` (10
+  tests) + `./scripts/verify-wallet-ui.ts` (6 tests). They exercise the
+  production state machines, payout orchestration, idempotency, the
+  wallet-connect UI, and a gated concurrency test proving exactly one payout
+  under race. The real-devnet funding/release/refund loop is additionally
+  proven end-to-end with finalized signatures (2026-08-12, see §4), so no part
+  of the money path is unverified.
 
 ## 4. Step-by-step demo script (devnet)
 
@@ -185,34 +199,41 @@ Live URL: **https://f12516e14696555a71d9a2020f198f39.ctonew.app** (devnet)
    explorer links — on-chain proof of every step.
 
 > **Funding note for reviewers:** the escrow wallet is
-> `HbnkZrt3BpoitesaHxvKEicKxHaFbXBxG2jRfuxbHTfH`. The devnet faucet is
-> rate-limited (HTTP 429) from shared egress, so the escrow may sit at 0 SOL
-> and reject approvals with a 422 balance error until it is manually topped up
-> via https://faucet.solana.com (see README "Devnet setup guide"). This is an
-> environmental limitation, not a code path issue — release/refund
-> orchestration is fully verified offline (9/9 tests, including real
-> instruction-level assertions on the signed transactions).
+> `HbnkZrt3BpoitesaHxvKEicKxHaFbXBxG2jRfuxbHTfH` and holds **~3.85 SOL on
+> devnet** (queried live from api.devnet.solana.com). The live E2E run
+> (2026-08-12) completed two full loops through the running app: deposit +
+> release (task `c3e84057-…` → `approved`, escrow → agent payout wallet) and
+> deposit + refund (task `c46f11f4-…` → `refunded`, escrow → funder), both
+> confirmed **Finalized** with signatures recorded in History and in the grant
+> evidence checklist (also readable from the public `/api/txns`).
+> Approve idempotency was proven live (repeat approve → same signature, no
+> double-pay) and server-side deposit verification proven live (wrong amount →
+> 422).
 
 ## 5. Stack & what's already shipped
 
 - **Shipped:** wallet connect · task creation · SOL+USDC deposits with
   server-side on-chain verification · agent execution (OpenAI/Anthropic +
   labeled demo mode) · review · on-chain release/refund · history & explorer
-  proof · graceful no-DB demo mode · 16/16 offline tests · README + env
-  contract + this submission.
+  proof · graceful no-DB demo mode · 23/23 offline tests · live devnet E2E with
+  finalized signatures · README + env contract + this submission.
 - **Stack:** React 19 / Vite / Tailwind 4 (TanStack Start), Bun, Neon
   Postgres, @solana/web3.js + spl-token + wallet-adapter, OpenAI/Anthropic.
-- **Repo:** currently in the team workspace (`/home/team/shared/site`); version
-  control to be attached to a repo in the next step.
+- **Repo (public):** https://github.com/hustlemirageofficial/solana-ai-agent-task-hub
+  (main @ `d175a04`) — full commit history; PRs #1–#3 merged. The app is live
+  at https://f12516e14696555a71d9a2020f198f39.ctonew.app.
 
 ## 6. Roadmap
 
-- **Immediate:** live devnet E2E funding run once the faucet frees up
-  (`scripts/verify-funding.ts` — real signatures to be published); attach
-  version control.
-- **Next:** per-funder accounts & history scoping · real agent registry with
-  identities/reputation · cancellation & partial-release flows · multi-agent
-  workflows · on-chain proof certificates/exportable audit trail.
+- **Done (shipped MVP, 2026-08-12):** live devnet E2E funding run completed —
+  deposit + release (task `c3e84057-…` → `approved`) and deposit + refund (task
+  `c46f11f4-…` → `refunded`), all signatures finalized on-chain and recorded in
+  the grant evidence checklist. Version control attached: public repo at
+  github.com/hustlemirageofficial/solana-ai-agent-task-hub (see §5).
+- **Next (after the shipped MVP):** per-funder accounts & history scoping ·
+  real agent registry with identities/reputation · cancellation &
+  partial-release flows · multi-agent workflows · on-chain proof
+  certificates/exportable audit trail.
 - **Later:** mainnet deployment (fully env-driven; nothing hardcodes mainnet) ·
   fee model (tiny platform fee on release) · dispute/arbitration layer.
 
@@ -221,15 +242,19 @@ Live URL: **https://f12516e14696555a71d9a2020f198f39.ctonew.app** (devnet)
 **Team:** AgentPay (a small team of engineers building in the shared workspace;
 full-stack + Solana + agent engineering covered end to end).
 
-**Ask:** the Agentic Engineering Grant would fund (a) shipping the remaining
-E2E verification and production hardening, (b) the agent registry & reputation
-layer, and (c) the mainnet launch. The core escrow loop is already real,
-tested, and live on devnet — the grant accelerates the path from working demo
-to trusted product.
+**Ask:** this grant's **200 USDG** covers a month of the highest tier of AI
+coding tools. AgentPay is **already shipped and live on devnet** — so the ask
+is straightforward: approval funds the AI-coding subscription that built the
+MVP (and continues to power the roadmap in §6), and the tranche-2 evidence is
+the live product itself (public URL + public GitHub repo + on-chain
+finalized-signature proof). No invented commitments: everything claimed here is
+verifiable today in the running app.
 
 ---
 
 *This document was prepared by the AgentPay engineering team. Facts about the
-product are accurate against the codebase as of 2026-08; grant-cycle specifics
-(deadline/eligibility/format) must be confirmed on earn.superteam.fun before
-submission.*
+product are accurate against the codebase as of 2026-08 and were re-verified
+for this update on 2026-08-15 (23/23 tests, live site, public repo, escrow
+balance, on-chain signatures). Grant-cycle details were verified live on the
+official listing on 2026-08-15 — see
+`/home/team/shared/grant-evidence/grant-cycle-verified.md` and §Header.*
