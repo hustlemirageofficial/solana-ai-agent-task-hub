@@ -1,6 +1,4 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Brand } from "~/components/Brand";
-import type { ReactNode } from "react";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -46,13 +44,7 @@ function Home() {
             </div>
 
             <div className="relative lg:pl-4">
-              <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#07101c]/75 p-2 shadow-2xl shadow-black/60 ring-1 ring-violet-400/[0.08]">
-                <img src="/hero.png" alt="AGENT-PAY escrow workflow" className="aspect-[3/2] w-full rounded-xl object-cover" width={1536} height={1024} />
-                <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-[#050a13]/94 px-4 py-3 shadow-2xl backdrop-blur-xl">
-                  <div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Escrow status</p><p className="mt-0.5 text-sm font-bold text-white">Funds protected</p></div>
-                  <span className="shrink-0 rounded-md border border-emerald-300/10 bg-emerald-300/[0.06] px-2.5 py-1 text-[10px] font-bold tracking-wide text-emerald-300">ON-CHAIN</span>
-                </div>
-              </div>
+              <LiveEscrowPreview />
             </div>
           </div>
         </section>
@@ -86,6 +78,42 @@ function Home() {
       <footer className="border-t border-white/[0.06] py-10"><div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 text-sm text-slate-500 sm:flex-row sm:px-6 lg:px-8"><Link to="/" className="text-[13px] font-black tracking-[0.16em] text-white" aria-label="AGENT-PAY home">AGENT<span className="mx-1 text-violet-300">-</span>PAY</Link><p>Solana devnet · escrow, releases & refunds recorded on-chain</p><Link to="/app" className="transition hover:text-white">Launch app</Link></div></footer>
     </div>
   );
+}
+
+function LiveEscrowPreview() {
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#050b15]/95 p-4 shadow-2xl shadow-black/60 ring-1 ring-violet-400/[0.08] sm:p-5">
+      <div aria-hidden className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-violet-500/10 blur-3xl" />
+      <div aria-hidden className="absolute -bottom-24 -left-20 h-56 w-56 rounded-full bg-emerald-400/10 blur-3xl" />
+      <div className="relative">
+        <div className="flex items-center justify-between border-b border-white/[0.07] pb-4">
+          <div><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Escrow flow</p><p className="mt-1 text-sm font-bold text-white">Autonomous task #042</p></div>
+          <div className="flex items-center gap-2 rounded-full border border-emerald-300/10 bg-emerald-300/[0.06] px-2.5 py-1.5"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" /><span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Live preview</span></div>
+        </div>
+
+        <div className="mt-5 rounded-xl border border-white/[0.07] bg-white/[0.025] p-4">
+          <div className="flex items-end justify-between"><div><p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Bounty</p><p className="mt-1 text-2xl font-black tracking-tight text-white">2.50 <span className="text-sm font-bold text-slate-400">SOL</span></p></div><span className="text-[10px] font-semibold text-slate-500">ESCROWED</span></div>
+          <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-white/[0.07]"><div className="h-full w-[76%] rounded-full bg-gradient-to-r from-violet-400 to-emerald-300" /></div>
+          <div className="mt-2 flex justify-between text-[10px] text-slate-500"><span>Protected</span><span>76%</span></div>
+        </div>
+
+        <div className="mt-5 space-y-3">
+          <FlowRow number="01" title="Funds locked" detail="Escrow secured" state="complete" />
+          <FlowRow number="02" title="Agent executing" detail="Task in progress" state="active" />
+          <FlowRow number="03" title="Result verification" detail="Awaiting approval" state="pending" />
+          <FlowRow number="04" title="Payment release" detail="Owner controlled" state="pending" />
+        </div>
+
+        <div className="mt-5 flex items-center justify-between border-t border-white/[0.07] pt-4"><span className="text-[10px] uppercase tracking-[0.16em] text-slate-500">Solana devnet</span><span className="font-mono text-[10px] text-slate-500">7xK9...P4mQ</span></div>
+      </div>
+    </div>
+  );
+}
+
+function FlowRow({ number, title, detail, state }: { number: string; title: string; detail: string; state: "complete" | "active" | "pending" }) {
+  const active = state === "active";
+  const complete = state === "complete";
+  return <div className={`flex items-center gap-3 rounded-xl border p-3 transition ${active ? "border-violet-300/20 bg-violet-300/[0.045]" : "border-white/[0.06] bg-white/[0.018]"}`}><div className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[10px] font-black ${complete ? "bg-emerald-300/10 text-emerald-300" : active ? "bg-violet-300/10 text-violet-200" : "bg-white/[0.05] text-slate-500"}`}>{complete ? "✓" : number}</div><div className="min-w-0 flex-1"><p className="text-xs font-bold text-white">{title}</p><p className="mt-0.5 text-[10px] text-slate-500">{detail}</p></div>{active && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-violet-300" />}{complete && <span className="text-[10px] font-semibold text-emerald-300">DONE</span>}</div>;
 }
 
 function FeatureCard({ index, title, body }: { index: string; title: string; body: string }) { return <article className="group border-b border-white/[0.07] p-6 last:border-b-0 sm:p-7 lg:border-b-0 lg:border-r lg:last:border-r-0"><p className="text-xs font-bold tracking-[0.18em] text-violet-300">{index}</p><h3 className="mt-7 font-bold text-white">{title}</h3><p className="mt-2 text-sm leading-6 text-slate-400">{body}</p></article>; }
