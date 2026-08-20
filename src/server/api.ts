@@ -1,39 +1,15 @@
 import { getEscrowAddress } from "./escrow";
-import { DB_NOT_CONFIGURED, ApiError, createTask, dbStatus, getTask, isDbConfigured, listTasks, listTxns, toClientRow } from "./tasks";
+import { DB_NOT_CONFIGURED, ApiError, createTask, dbStatus, getTask, isDbConfigured, listTasks, listTxns } from "./tasks";
 import { recordDeposit } from "./funding";
 import { executeTask, parseTaskResult } from "./agent";
 import { releasePayment, refundPayment } from "./release";
 
-/**
- * REST API for AgentPay.
- *
- * IMPORTANT (version note): this TanStack Start version (@tanstack/react-start
- * 1.168.x) no longer ships the createAPIFileRoute / src/routes/api/* mechanism,
- * so the API is mounted directly in serve.ts (the production Bun server) ahead
- * of the TanStack handler. Shared logic lives in src/server/* and is also used
- * by server functions in the app pages, so there is a single source of truth.
- *
- * Endpoints:
- *   GET  /api/health          → ok + db status + escrow configuration status
- *   GET  /api/escrow/address  → escrow public address when configured
- *   GET  /api/tasks           → list tasks (newest first)
- *   POST /api/tasks           → create a draft task (requires escrow)
- *   GET  /api/tasks/:id       → single task (result parsed as JSON when set,
- *                               plus a `demo` boolean)
- *   POST /api/tasks/:id/deposit → verify + record an on-chain deposit
- *   POST /api/tasks/:id/run   → run the agent on a funded task
- *   POST /api/tasks/:id/approve → approve the result and release escrow
- *   POST /api/tasks/:id/reject  → reject the result and refund escrow
- *   GET  /api/txns?taskId=..  → transaction history
- */
+/** REST API for AgentPay. */
 
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
 
 function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: JSON_HEADERS,
-  });
+  return new Response(JSON.stringify(data), { status, headers: JSON_HEADERS });
 }
 
 const DB_ROUTES = new Set(["/api/tasks", "/api/txns"]);
@@ -58,7 +34,6 @@ export async function handleApiRequest(req: Request): Promise<Response | null> {
   if (!pathname.startsWith("/api/")) return null;
 
   const method = req.method;
-
   if (isDbRoute(pathname) && !isDbConfigured()) {
     return json({ error: DB_NOT_CONFIGURED, db: "not_configured" }, 503);
   }
@@ -79,10 +54,7 @@ export async function handleApiRequest(req: Request): Promise<Response | null> {
       case "/api/escrow/address": {
         if (method !== "GET") break;
         if (!escrowConfigured()) {
-          return json({
-            error: "Escrow is not configured — set ESCROW_PRIVATE_KEY for this deployment.",
-            escrow_configured: false,
-          }, 503);
+          return json({ error: "Escrow is not configured — set ESCROW_PRIVATE_KEY for this deployment.", escrow_configured: false }, 503);
         }
         return json({ address: await getEscrowAddress(), escrow_configured: true });
       }
@@ -108,41 +80,27 @@ export async function handleApiRequest(req: Request): Promise<Response | null> {
           const id = decodeURIComponent(m[1]);
           if (method === "GET") {
             const task = await getTask(id);
-            return task
-              ? json({ task: parseTaskResult(task) })
-              : json({ error: "task not found" }, 404);
+            return task ? json({ task: parseTaskResult(task) }) : json({ error: "task not found" }, 404);
           }
-          if (method === "POST") {
-            const body = await readJson(req);
-            return json(await recordDeposit(id, body));
-          }
+          if (method === "POST") return json(await recordDeposit(id, await readJson(req)));
         }
         const deposit = pathname.match(/^\/api\/tasks\/([^/]+)\/deposit$/);
-        if (deposit) {
-          if (method !== "POST") break;
-          const id = decodeURIComponent(deposit[1]);
-          const body = await readJson(req);
-          return json(await recordDeposit(id, body));
+        if (deposit && method === "POST") {
+          return json(await recordDeposit(decodeURIComponent(deposit[1]), await readJson(req)));
         }
         const run = pathname.match(/^\/api\/tasks\/([^/]+)\/run$/);
-        if (run) {
-          if (method !== "POST") break;
-          const id = decodeURIComponent(run[1]);
-          const task = await executeTask(id);
+        if (run && method === "POST") {
+          const task = await executeTask(decodeURIComponent(run[1]));
           return json({ task: parseTaskResult(task) });
         }
         const approve = pathname.match(/^\/api\/tasks\/([^/]+)\/approve$/);
-        if (approve) {
-          if (method !== "POST") break;
-          const id = decodeURIComponent(approve[1]);
-          const res = await releasePayment(id);
+        if (approve && method === "POST") {
+          const res = await releasePayment(decodeURIComponent(approve[1]));
           return json({ task: parseTaskResult(res.task), txn: res.txn, already: res.already });
         }
         const reject = pathname.match(/^\/api\/tasks\/([^/]+)\/reject$/);
-        if (reject) {
-          if (method !== "POST") break;
-          const id = decodeURIComponent(reject[1]);
-          const res = await refundPayment(id);
+        if (reject && method === "POST") {
+          const res = await refundPayment(decodeURIComponent(reject[1]));
           return json({ task: parseTaskResult(res.task), txn: res.txn, already: res.already });
         }
       }
@@ -160,9 +118,7 @@ export async function handleApiRequest(req: Request): Promise<Response | null> {
 async function readJson(req: Request): Promise<Record<string, unknown>> {
   try {
     const parsed = (await req.json()) as unknown;
-    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
-      throw new Error("body must be a JSON object");
-    }
+    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("body must be a JSON object");
     return parsed as Record<string, unknown>;
   } catch {
     throw new ApiError(400, "invalid JSON body");
