@@ -1,6 +1,6 @@
 import { Keypair } from "@solana/web3.js";
 import bs58 from "bs58";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 /**
@@ -10,8 +10,11 @@ import path from "node:path";
  *   1. ESCROW_PRIVATE_KEY env var (base58-encoded secret key) — for managed
  *      deployments. The private key NEVER leaves the server and is never
  *      exposed through any API.
- *   2. data/escrow.json (base58 secret key), generated on first boot when no
- *      env var is set. File is gitignored and written with 0600 perms.
+ *   2. data/escrow.json (local development only).
+ *
+ * Managed deployments such as Vercel must provide ESCROW_PRIVATE_KEY. We do
+ * not generate or write an escrow secret into the deployment filesystem.
+ * This keeps the project client-ready and prevents read-only filesystem errors.
  *
  * Exposes only the public address via the API (GET /api/escrow/address).
  * Later delegations (funding / payout) will use getEscrowKeypair() to sign
@@ -21,7 +24,6 @@ import path from "node:path";
 let cached: Keypair | null = null;
 
 function escrowFile(): string {
-  // process.cwd() is the site root when started via publish.sh / `bun run start`.
   return path.resolve(process.cwd(), "data", "escrow.json");
 }
 
@@ -29,7 +31,7 @@ export async function getEscrowKeypair(): Promise<Keypair> {
   if (cached) return cached;
 
   const envKey = process.env.ESCROW_PRIVATE_KEY;
-  if (envKey) {
+  if (envKey?.trim()) {
     // Invalid env key should fail loudly — never silently generate a new one.
     cached = Keypair.fromSecretKey(bs58.decode(envKey.trim()));
     return cached;
@@ -42,19 +44,10 @@ export async function getEscrowKeypair(): Promise<Keypair> {
     cached = Keypair.fromSecretKey(bs58.decode(parsed.privateKey));
     return cached;
   } catch (err) {
-    // Only generate when the file is absent. A corrupt file should fail loudly,
-    // never be silently replaced (that would orphan any escrowed funds).
     if ((err as NodeJS.ErrnoException)?.code !== "ENOENT") throw err;
-    const keypair = Keypair.generate();
-    const dir = path.dirname(escrowFile());
-    await mkdir(dir, { recursive: true });
-    await writeFile(
-      escrowFile(),
-      JSON.stringify({ privateKey: bs58.encode(keypair.secretKey) }, null, 2) + "\n",
-      { mode: 0o600 }
+    throw new Error(
+      "Escrow is not configured. Set ESCROW_PRIVATE_KEY for this deployment."
     );
-    cached = keypair;
-    return keypair;
   }
 }
 
