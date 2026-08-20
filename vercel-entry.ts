@@ -11,6 +11,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import handler from "./dist/server/server.js";
+import { handleApiRequest } from "./src/server/api.ts";
 
 const fetchHandler = handler as {
   fetch: (request: Request) => Response | Promise<Response>;
@@ -39,7 +40,31 @@ export default async function vercelHandler(
   res: ServerResponse
 ): Promise<void> {
   try {
-    const webRes = await fetchHandler.fetch(toWebRequest(req));
+    const webReq = toWebRequest(req);
+    const pathname = new URL(webReq.url).pathname;
+
+    // The production Bun server mounts AgentPay's REST API before the TanStack
+    // handler. Vercel needs the same routing so database-backed endpoints such
+    // as /api/health and /api/tasks work in the deployed app as well.
+    if (pathname.startsWith("/api/")) {
+      const apiRes = await handleApiRequest(webReq);
+      if (apiRes) {
+        res.statusCode = apiRes.status;
+        apiRes.headers.forEach((value, key) => res.setHeader(key, value));
+        if (apiRes.body) {
+          const reader = apiRes.body.getReader();
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            res.write(value);
+          }
+        }
+        res.end();
+        return;
+      }
+    }
+
+    const webRes = await fetchHandler.fetch(webReq);
     res.statusCode = webRes.status;
     webRes.headers.forEach((value, key) => res.setHeader(key, value));
     if (webRes.body) {
