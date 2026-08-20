@@ -33,69 +33,82 @@ export function AgentResultView({ result }: { result: AgentResult }) {
 
 function CyberpunkAgentViz() {
   return (
-    <div className="relative isolate overflow-hidden rounded-2xl border border-violet-400/20 bg-[radial-gradient(circle_at_50%_45%,rgba(124,58,237,.18),transparent_35%),linear-gradient(135deg,#070711,#03040a)] p-4 shadow-[0_0_60px_rgba(124,58,237,.08)] sm:p-6">
-      <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,255,255,.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.035)_1px,transparent_1px)] [background-size:28px_28px]" />
-      <div className="relative mx-auto flex min-h-[360px] max-w-3xl items-center justify-center">
-        <div className="absolute h-64 w-64 animate-spin rounded-full border border-violet-400/10 [animation-duration:18s]" />
-        <div className="absolute h-48 w-48 animate-spin rounded-full border border-teal-300/15 border-dashed [animation-direction:reverse] [animation-duration:12s]" />
+    <section className="relative isolate overflow-hidden rounded-[28px] border border-violet-400/25 bg-[#03040a] shadow-[0_0_90px_rgba(124,58,237,.12)]">
+      <style>{`
+        @keyframes ap-orbit { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes ap-orbit-reverse { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+        @keyframes ap-scan { 0%,100% { opacity:.2; transform:translateY(-70px); } 50% { opacity:.7; transform:translateY(70px); } }
+        @keyframes ap-pulse { 0%,100% { transform:scale(.96); opacity:.45; } 50% { transform:scale(1.04); opacity:.9; } }
+        @keyframes ap-data { from { transform:translateX(-140%); } to { transform:translateX(260%); } }
+        @keyframes ap-eye { 0%,46%,52%,100% { opacity:1; } 49% { opacity:.15; } }
+        .ap-orbit { animation:ap-orbit 18s linear infinite; }
+        .ap-orbit-r { animation:ap-orbit-reverse 13s linear infinite; }
+        .ap-scan { animation:ap-scan 4s ease-in-out infinite; }
+        .ap-pulse { animation:ap-pulse 2.8s ease-in-out infinite; }
+        .ap-data { animation:ap-data 2.2s linear infinite; }
+        .ap-eye { animation:ap-eye 5s steps(1) infinite; }
+      `}</style>
+      <div className="absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,255,255,.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.035)_1px,transparent_1px)] [background-size:30px_30px]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(124,58,237,.20),transparent_30%),radial-gradient(circle_at_50%_100%,rgba(20,184,166,.10),transparent_45%)]" />
 
-        <div className="absolute left-2 top-8 rounded-xl border border-teal-300/20 bg-black/50 px-3 py-2 backdrop-blur sm:left-8">
-          <div className="text-[10px] uppercase tracking-[.2em] text-teal-300/70">Wallet</div>
-          <div className="mt-1 font-mono text-xs text-slate-200">CONNECTED</div>
+      <div className="relative min-h-[430px] overflow-hidden p-5 sm:min-h-[500px] sm:p-7">
+        <div className="absolute left-4 top-4 rounded-xl border border-teal-300/20 bg-black/60 px-3 py-2 backdrop-blur-md">
+          <div className="text-[9px] font-semibold uppercase tracking-[.25em] text-teal-300/70">Solana link</div>
+          <div className="mt-1 flex items-center gap-2 font-mono text-[11px] text-slate-200"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-teal-300" /> DEVNET / ONLINE</div>
         </div>
-        <div className="absolute right-2 top-8 rounded-xl border border-violet-300/20 bg-black/50 px-3 py-2 backdrop-blur sm:right-8">
-          <div className="text-[10px] uppercase tracking-[.2em] text-violet-300/70">Escrow</div>
-          <div className="mt-1 font-mono text-xs text-slate-200">PROTECTED</div>
-        </div>
-        <div className="absolute bottom-8 left-2 rounded-xl border border-cyan-300/20 bg-black/50 px-3 py-2 backdrop-blur sm:left-8">
-          <div className="text-[10px] uppercase tracking-[.2em] text-cyan-300/70">Solana</div>
-          <div className="mt-1 font-mono text-xs text-slate-200">ON-CHAIN</div>
-        </div>
-        <div className="absolute bottom-8 right-2 rounded-xl border border-emerald-300/20 bg-black/50 px-3 py-2 backdrop-blur sm:right-8">
-          <div className="text-[10px] uppercase tracking-[.2em] text-emerald-300/70">Agent</div>
-          <div className="mt-1 font-mono text-xs text-slate-200">ACTIVE CORE</div>
-        </div>
-
-        <div className="absolute h-72 w-72 animate-pulse rounded-full bg-violet-500/5 blur-2xl" />
-        <div className="relative flex h-48 w-40 items-center justify-center drop-shadow-[0_0_28px_rgba(45,212,191,.22)]">
-          <svg viewBox="0 0 160 220" className="h-full w-full" role="img" aria-label="Cyberpunk AI agent">
-            <defs>
-              <linearGradient id="robotMetal" x1="0" x2="1">
-                <stop offset="0" stopColor="#111827" />
-                <stop offset=".5" stopColor="#475569" />
-                <stop offset="1" stopColor="#0f172a" />
-              </linearGradient>
-              <linearGradient id="robotGlow" x1="0" x2="1">
-                <stop offset="0" stopColor="#22d3ee" />
-                <stop offset=".5" stopColor="#a78bfa" />
-                <stop offset="1" stopColor="#2dd4bf" />
-              </linearGradient>
-              <filter id="softGlow"><feGaussianBlur stdDeviation="3" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
-            </defs>
-            <path d="M43 78 L31 94 L36 142 L52 151 L108 151 L124 142 L129 94 L117 78" fill="url(#robotMetal)" stroke="#64748b" strokeWidth="2" />
-            <path d="M52 54 Q80 34 108 54 L113 91 Q80 106 47 91 Z" fill="#0b1120" stroke="url(#robotGlow)" strokeWidth="3" filter="url(#softGlow)" />
-            <path d="M58 67 L70 62 L75 75 L62 80 Z M102 67 L90 62 L85 75 L98 80 Z" fill="#020617" stroke="#22d3ee" strokeWidth="2" />
-            <circle cx="66" cy="71" r="3" fill="#67e8f9" filter="url(#softGlow)" />
-            <circle cx="94" cy="71" r="3" fill="#a78bfa" filter="url(#softGlow)" />
-            <path d="M68 88 Q80 94 92 88" fill="none" stroke="#2dd4bf" strokeWidth="2" />
-            <path d="M55 107 L80 116 L105 107 L99 143 L80 151 L61 143 Z" fill="#111827" stroke="#475569" strokeWidth="2" />
-            <path d="M68 118 H92 M66 128 H94 M70 138 H90" stroke="url(#robotGlow)" strokeWidth="2" strokeLinecap="round" />
-            <path d="M31 101 L17 112 L24 145 L39 138 M129 101 L143 112 L136 145 L121 138" fill="url(#robotMetal)" stroke="#64748b" strokeWidth="2" />
-            <path d="M55 151 L48 181 L61 202 L74 181 L80 154 L86 181 L99 202 L112 181 L105 151" fill="url(#robotMetal)" stroke="#64748b" strokeWidth="2" />
-            <path d="M80 42 V28" stroke="#94a3b8" strokeWidth="2" />
-            <circle cx="80" cy="23" r="5" fill="#22d3ee" filter="url(#softGlow)" />
-            <path d="M41 95 H24 M119 95 H136 M50 159 H34 M110 159 H126" stroke="#22d3ee" strokeWidth="1" opacity=".8" />
-          </svg>
+        <div className="absolute right-4 top-4 rounded-xl border border-violet-300/20 bg-black/60 px-3 py-2 text-right backdrop-blur-md">
+          <div className="text-[9px] font-semibold uppercase tracking-[.25em] text-violet-300/70">Settlement core</div>
+          <div className="mt-1 font-mono text-[11px] text-slate-200">ESCROW PROTECTED</div>
         </div>
 
-        <div className="absolute inset-x-12 top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-transparent via-violet-300/40 to-transparent" />
-        <div className="absolute inset-x-1/2 top-10 h-[calc(100%-80px)] w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-teal-300/20 to-transparent" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="ap-orbit absolute h-[340px] w-[340px] rounded-full border border-violet-400/15 sm:h-[400px] sm:w-[400px]" />
+          <div className="ap-orbit-r absolute h-[270px] w-[270px] rounded-full border border-dashed border-teal-300/20 sm:h-[320px] sm:w-[320px]" />
+          <div className="absolute h-[210px] w-[210px] rounded-full bg-violet-500/10 blur-3xl ap-pulse" />
+
+          <div className="absolute h-px w-[82%] overflow-hidden bg-gradient-to-r from-transparent via-violet-300/30 to-transparent">
+            <span className="ap-data block h-1 w-24 -translate-y-1/2 rounded-full bg-gradient-to-r from-transparent via-teal-300 to-transparent blur-[1px]" />
+          </div>
+          <div className="absolute h-[82%] w-px overflow-hidden bg-gradient-to-b from-transparent via-teal-300/20 to-transparent">
+            <span className="ap-data block h-24 w-1 -translate-x-1/2 rounded-full bg-gradient-to-b from-transparent via-violet-300 to-transparent blur-[1px]" />
+          </div>
+
+          <div className="relative h-[250px] w-[190px] [perspective:900px] sm:h-[300px] sm:w-[225px]">
+            <div className="absolute left-1/2 top-1/2 h-[88%] w-[72%] -translate-x-1/2 -translate-y-1/2 rounded-[45%] bg-violet-500/10 blur-2xl ap-pulse" />
+            <div className="absolute left-1/2 top-[10%] h-[31%] w-[62%] -translate-x-1/2 rounded-[35%_35%_28%_28%] border border-slate-400/60 bg-gradient-to-br from-slate-700 via-slate-950 to-black shadow-[inset_8px_8px_18px_rgba(255,255,255,.10),inset_-10px_-12px_24px_rgba(0,0,0,.8),0_0_30px_rgba(34,211,238,.12)] [transform:translateX(-50%)_rotateX(4deg)]">
+              <div className="absolute left-1/2 top-[18%] h-[48%] w-[74%] -translate-x-1/2 rounded-[42%_42%_30%_30%] border border-cyan-200/20 bg-[#020617] shadow-[inset_0_0_22px_rgba(34,211,238,.12)]">
+                <div className="ap-eye absolute left-[25%] top-[43%] h-2 w-7 rounded-full bg-cyan-200 shadow-[0_0_12px_#22d3ee]" />
+                <div className="ap-eye absolute right-[25%] top-[43%] h-2 w-7 rounded-full bg-violet-200 shadow-[0_0_12px_#a78bfa]" />
+                <div className="absolute bottom-[14%] left-1/2 h-1 w-10 -translate-x-1/2 rounded-full bg-teal-300/80 shadow-[0_0_10px_#2dd4bf]" />
+              </div>
+              <div className="absolute left-1/2 top-[-13%] h-8 w-px -translate-x-1/2 bg-slate-500" />
+              <div className="absolute left-1/2 top-[-18%] h-3 w-3 -translate-x-1/2 rounded-full bg-teal-300 shadow-[0_0_16px_#22d3ee]" />
+            </div>
+
+            <div className="absolute left-1/2 top-[39%] h-[45%] w-[76%] -translate-x-1/2 rounded-[28%_28%_18%_18%] border border-slate-500/70 bg-gradient-to-r from-slate-800 via-slate-950 to-slate-800 shadow-[inset_12px_0_24px_rgba(255,255,255,.05),inset_-14px_-12px_28px_rgba(0,0,0,.85)]">
+              <div className="absolute left-1/2 top-[16%] h-[50%] w-[42%] -translate-x-1/2 rounded-2xl border border-violet-300/30 bg-black/70 shadow-[inset_0_0_22px_rgba(124,58,237,.20)]">
+                <div className="absolute left-1/2 top-[22%] h-12 w-12 -translate-x-1/2 rounded-full border border-teal-300/50 bg-gradient-to-br from-violet-500/30 to-teal-300/10 shadow-[0_0_24px_rgba(45,212,191,.25)] ap-pulse" />
+                <div className="absolute left-1/2 top-[39%] h-px w-20 -translate-x-1/2 bg-teal-300/50" />
+                <div className="absolute left-1/2 top-[50%] h-px w-14 -translate-x-1/2 bg-violet-300/50" />
+                <div className="absolute bottom-[16%] left-1/2 -translate-x-1/2 font-mono text-[8px] tracking-[.2em] text-teal-300">AGENT CORE</div>
+              </div>
+              <div className="ap-scan absolute left-[8%] right-[8%] top-1/2 h-px bg-gradient-to-r from-transparent via-cyan-200/60 to-transparent" />
+            </div>
+
+            <div className="absolute left-[4%] top-[45%] h-[35%] w-[19%] rounded-[45%] border border-slate-500/60 bg-gradient-to-b from-slate-700 to-black shadow-[inset_4px_0_8px_rgba(255,255,255,.05)] [transform:rotate(10deg)]" />
+            <div className="absolute right-[4%] top-[45%] h-[35%] w-[19%] rounded-[45%] border border-slate-500/60 bg-gradient-to-b from-slate-700 to-black shadow-[inset_-4px_0_8px_rgba(255,255,255,.05)] [transform:rotate(-10deg)]" />
+            <div className="absolute left-[27%] bottom-[2%] h-[28%] w-[20%] rounded-[40%_40%_25%_25%] border border-slate-500/60 bg-gradient-to-b from-slate-700 to-black" />
+            <div className="absolute right-[27%] bottom-[2%] h-[28%] w-[20%] rounded-[40%_40%_25%_25%] border border-slate-500/60 bg-gradient-to-b from-slate-700 to-black" />
+          </div>
+        </div>
+
+        <div className="absolute bottom-5 left-1/2 w-[calc(100%-40px)] max-w-md -translate-x-1/2 rounded-2xl border border-white/10 bg-black/65 px-4 py-3 text-center backdrop-blur-xl">
+          <div className="text-[9px] font-semibold uppercase tracking-[.3em] text-violet-300/70">AgentPay autonomous core</div>
+          <div className="mt-1 text-sm font-semibold text-white">CYBERPUNK AGENT ONLINE</div>
+          <div className="mt-1 flex items-center justify-center gap-2 font-mono text-[10px] text-slate-400"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-teal-300" /> WALLET → ESCROW → AGENT → OWNER</div>
+        </div>
       </div>
-      <div className="relative mt-2 flex items-center justify-between border-t border-white/5 pt-3 text-[10px] uppercase tracking-[.2em] text-slate-500">
-        <span>AgentPay neural settlement layer</span>
-        <span className="flex items-center gap-1.5 text-teal-300"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-teal-300" /> LIVE</span>
-      </div>
-    </div>
+    </section>
   );
 }
 
